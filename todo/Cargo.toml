@@ -10,12 +10,10 @@ wit-bindgen = "0.36.0"
 path = "../target/caller-utils"
 
 [dependencies.hyperprocess_macro]
-git = "https://github.com/hyperware-ai/hyperprocess-macro"
-branch = "zhr/http-request-consolidation"
+path = "/Users/zahirsabotic/Documents/Work/hyperprocess-macro/hyperprocess_macro"
 
 [dependencies.hyperware_app_common]
-git = "https://github.com/hyperware-ai/hyperprocess-macro"
-branch = "zhr/http-request-consolidation"
+path = "/Users/zahirsabotic/Documents/Work/hyperprocess-macro/hyperware_app_common"
 
 [dependencies.serde]
 features = ["derive"]

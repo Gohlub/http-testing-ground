@@ -37,138 +37,44 @@ function App() {
     }
   }, []);
 
-  const fetchTasks = useCallback(async () => {
-    // If WebSocket is connected, request tasks via WebSocket
+  const fetchTasks = useCallback(() => {
+    // Only use WebSocket - no HTTP fallback
     if (wsConnected && wsRef.current) {
       sendWsMessage({ action: "get_tasks" });
-      return;
+    } else {
+      console.warn("Cannot fetch tasks: WebSocket not connected");
     }
+  }, [wsConnected, sendWsMessage]);
 
-    // Otherwise fall back to HTTP
-    const requestData: GetTasksRequest = { GetTasks: "" };
-
-    try {
-      const result = await fetch(`${BASE_URL}/api`, {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData), 
-      });
-
-      if (!result.ok) {
-        const errorText = await result.text();
-        console.error(`HTTP request failed: ${result.status} ${result.statusText}. Response:`, errorText);
-        throw new Error(`HTTP request failed: ${result.statusText}`);
-      }
-      
-      const responseData = await result.json() as GetTasksResponse; 
-      
-      if (responseData.Ok) {
-        console.log("Fetched tasks:", responseData.Ok); 
-        setTasks(responseData.Ok); 
-      } else {
-        console.error("Error fetching tasks:", responseData.Err || "Unknown error"); 
-        setTasks([]);
-      }
-    } catch (error) {
-      console.error("Failed to fetch tasks:", error);
-      setTasks([]);
-    }
-  }, [wsConnected, sendWsMessage, setTasks]);
-
-  const handleAddTask = useCallback(async () => {
+  const handleAddTask = useCallback(() => {
     if (!newTaskText.trim()) return;
 
-    // If WebSocket is connected, send via WebSocket
+    // Only use WebSocket - no HTTP fallback
     if (wsConnected && wsRef.current) {
       sendWsMessage({
         action: "add_task",
         text: newTaskText 
       });
       setNewTaskText("");
-      return;
+    } else {
+      console.warn("Cannot add task: WebSocket not connected");
     }
+  }, [newTaskText, wsConnected, sendWsMessage]);
 
-    // Otherwise fall back to HTTP
-    const requestData: AddTaskRequest = { AddTask: newTaskText };
-
-    try {
-      const result = await fetch(`${BASE_URL}/api`, {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData),
-      });
-
-      if (!result.ok) {
-        const errorText = await result.text();
-        console.error(`HTTP request failed: ${result.status} ${result.statusText}. Response:`, errorText);
-        throw new Error(`HTTP request failed: ${result.statusText}`);
-      }
-
-      const responseData = await result.json() as AddTaskResponse;
-
-      if (responseData.Ok) { 
-        console.log("Task added successfully:", responseData.Ok);
-        setNewTaskText("");
-        fetchTasks();
-      } else {
-        console.error("Error adding task:", responseData.Err || "Unknown error");
-      }
-    } catch (error) {
-      console.error("Failed to add task:", error);
-    }
-  }, [newTaskText, wsConnected, sendWsMessage, fetchTasks]);
-
-  const handleToggleComplete = useCallback(async (taskId: string) => {
-    // If WebSocket is connected, send via WebSocket
+  const handleToggleComplete = useCallback((taskId: string) => {
+    // Only use WebSocket - no HTTP fallback
     if (wsConnected && wsRef.current) {
       sendWsMessage({
         action: "toggle_task",
         id: taskId 
       });
-      return;
+    } else {
+      console.warn("Cannot toggle task: WebSocket not connected");
     }
-
-    // Otherwise fall back to HTTP
-    const requestData: ToggleTaskRequest = { ToggleTask: taskId };
-
-    try {
-        const result = await fetch(`${BASE_URL}/api`, {
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestData),
-        });
-
-        if (!result.ok) {
-            const errorText = await result.text();
-            console.error(`HTTP request failed: ${result.status} ${result.statusText}. Response:`, errorText);
-            throw new Error(`HTTP request failed: ${result.statusText}`);
-        }
-
-        const responseData = await result.json() as ToggleTaskResponse;
-
-        if (responseData.Ok) {
-            console.log("Task toggled successfully:", responseData.Ok);
-            fetchTasks();
-        } else {
-            console.error("Error toggling task:", responseData.Err || "Unknown error");
-        }
-    } catch (error) {
-        console.error("Failed to toggle task:", error);
-    }
-  }, [wsConnected, sendWsMessage, fetchTasks]);
+  }, [wsConnected, sendWsMessage]);
 
   // Setup WebSocket connection
   useEffect(() => {
-    // Initial fetch only if not using WebSocket
-    if (!wsConnected) {
-      fetchTasks(); 
-    }
 
     // Create WebSocket connection
     const ws = new WebSocket(WEBSOCKET_URL);
@@ -177,8 +83,8 @@ function App() {
     ws.onopen = (event) => {
       console.log("WebSocket connection opened:", event);
       setWsConnected(true);
-      // Subscribe to task updates
-      sendWsMessage({ action: "subscribe" });
+      // Fetch initial tasks when WebSocket connects
+      ws.send(JSON.stringify({ action: "get_tasks" }));
     };
 
     ws.onmessage = (event) => {
@@ -188,7 +94,7 @@ function App() {
         console.log("Parsed WebSocket message:", data);
         
         // Handle different message types
-        if (data.type === "tasks_update" || data.type === "task_added" || data.type === "task_toggled") {
+        if (data.type === "tasks_overview" || data.type === "task_added" || data.type === "task_toggled") {
           if (data.tasks) {
             console.log("Updating tasks from WebSocket:", data.tasks);
             setTasks(data.tasks);
@@ -213,7 +119,6 @@ function App() {
     return () => {
       console.log("Closing WebSocket connection");
       if (ws.readyState === WebSocket.OPEN) {
-        sendWsMessage({ action: "unsubscribe" });
         ws.close();
       }
     };

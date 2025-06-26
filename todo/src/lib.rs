@@ -91,9 +91,9 @@ pub struct TodoState {
             path: "/health",
             config: HttpBindingConfig::new(false, false, false, None),
         },
-        Binding::Http {
+        Binding::Ws {
             path: "/ws",
-            config: HttpBindingConfig::new(false, false, false, None),
+            config: WsBindingConfig::new(false, false, false),
         },
         // Demo/testing endpoints
         Binding::Http {
@@ -195,6 +195,20 @@ impl TodoState {
         kiprintln!("Request: {:?}", request);
         kiprintln!("Fetching tasks");
         Ok(self.tasks.clone())
+    }
+
+    /// Toggle a todo task's completion status
+    #[http]
+    async fn toggle_task(&mut self, task_id: String) -> Result<TodoItem, String> {
+        kiprintln!("Toggling task: {}", task_id);
+        
+        if let Some(task) = self.tasks.iter_mut().find(|t| t.id == task_id) {
+            task.completed = !task.completed;
+            kiprintln!("Task toggled: {:?}", task);
+            Ok(task.clone())
+        } else {
+            Err(format!("Task with id '{}' not found", task_id))
+        }
     }
 
     #[ws]
