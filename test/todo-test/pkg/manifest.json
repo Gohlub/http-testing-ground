@@ -1,0 +1,17 @@
+[
+    {
+        "process_name": "todo-test",
+        "process_wasm_path": "/todo-test.wasm",
+        "on_exit": "None",
+        "request_networking": true,
+        "request_capabilities": [
+            "http-client:distro:sys",
+            "todo:todo:template.os"
+        ],
+        "grant_capabilities": [
+            "http-client:distro:sys",
+            "todo:todo:template.os"
+        ],
+        "public": true
+    }
+]
