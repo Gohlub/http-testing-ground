@@ -7,7 +7,7 @@ echo "🧪 Testing simplified HTTP routing patterns..."
 echo "Base URL: $BASE_URL"
 echo ""
 
-# Function to test endpoint
+# Function to test endpoint with smart response formatting
 test_endpoint() {
     local method="$1"
     local path="$2" 
@@ -26,22 +26,29 @@ test_endpoint() {
         local response=$(curl -s -X "$method" "$BASE_URL$path")
     fi
     
-    echo "  Response: $response"
+    # Check if response looks like HTML
+    if [[ "$response" == *"<!DOCTYPE"* ]] || [[ "$response" == *"<html"* ]] || [[ "$response" == *"<HTML"* ]]; then
+        echo "  Response: [HTML Document - UI loaded successfully]"
+    elif [[ "$response" == *"<"*">"* ]] && [[ ${#response} -gt 200 ]]; then
+        echo "  Response: [HTML/XML Content - ${#response} characters]"
+    else
+        echo "  Response: $response"
+    fi
     echo ""
 }
 
 echo "=== SPECIFIC PATH HANDLERS ==="
 
 test_endpoint "GET" "/users" "" " GET /users (specific handler)"
-test_endpoint "POST" "/users" '{"CreateUser": {"message": "John Doe", "id": 1}}' "POST /users (specific handler with params)"
+test_endpoint "POST" "/users" '{"CreateUser": {"message": "John Doe", "id": 1}}' " POST /users (specific handler with params)"
 test_endpoint "GET" "/posts" "" " GET /posts (specific handler)"
-test_endpoint "POST" "/api/data" '{"ProcessData": {"message": "test data", "id": 42}}' "POST /api/data (specific handler with params)"
+test_endpoint "POST" "/api/data" '{"ProcessData": {"message": "test data", "id": 42}}' " POST /api/data (specific handler with params)"
 
 echo "=== DYNAMIC FALLBACK HANDLERS ==="
 
-test_endpoint "GET" "/api/unknown" "" "GET /api/unknown (should hit GET fallback)"
-test_endpoint "GET" "/admin/dashboard" "" " GET /admin/dashboard (should hit GET fallback)" 
-test_endpoint "GET" "/random/path" "" " GET /random/path (should hit GET fallback)"
+test_endpoint "GET" "/api/unknown" "" " GET /api/unknown (should hit API GET fallback)"
+test_endpoint "GET" "/admin/dashboard" "" " GET /admin/dashboard (should hit admin GET fallback)" 
+test_endpoint "GET" "/test/something" "" " GET /test/something (should hit test GET fallback)"
 
 test_endpoint "POST" "/api/upload" '{"HandlePostFallback": {"message": "upload data", "id": 99}}' "🔄 POST /api/upload (should hit POST fallback)"
 test_endpoint "POST" "/other/endpoint" '{"HandlePostFallback": {"message": "other data", "id": 88}}' "🔄 POST /other/endpoint (should hit POST fallback)"

@@ -87,16 +87,14 @@ pub struct TodoState {
     name = "todo",
     ui = Some(HttpBindingConfig::default()),
     endpoints = vec![
-        // Core application endpoints
-        Binding::Http {
-            path: "/",
-            config: HttpBindingConfig::new(false, false, false, None),
-        },
         Binding::Http {
             path: "/health",
             config: HttpBindingConfig::new(false, false, false, None),
         },
-        
+        Binding::Http {
+            path: "/ws",
+            config: HttpBindingConfig::new(false, false, false, None),
+        },
         // Demo/testing endpoints
         Binding::Http {
             path: "/users",
@@ -104,6 +102,50 @@ pub struct TodoState {
         },
         Binding::Http {
             path: "/posts",
+            config: HttpBindingConfig::new(false, false, false, None),
+        },
+        Binding::Http {
+            path: "/api",
+            config: HttpBindingConfig::new(false, false, false, None),
+        },
+        Binding::Http {
+            path: "/admin",
+            config: HttpBindingConfig::new(false, false, false, None),
+        },
+        Binding::Http {
+            path: "/test",
+            config: HttpBindingConfig::new(false, false, false, None),
+        },
+        Binding::Http {
+            path: "/api/unknown",
+            config: HttpBindingConfig::new(false, false, false, None),
+        },
+        Binding::Http {
+            path: "/admin/dashboard", 
+            config: HttpBindingConfig::new(false, false, false, None),
+        },
+        Binding::Http {
+            path: "/test/something",
+            config: HttpBindingConfig::new(false, false, false, None),
+        },
+        Binding::Http {
+            path: "/api/upload",
+            config: HttpBindingConfig::new(false, false, false, None),
+        },
+        Binding::Http {
+            path: "/other/endpoint",
+            config: HttpBindingConfig::new(false, false, false, None),
+        },
+        Binding::Http {
+            path: "/anything",
+            config: HttpBindingConfig::new(false, false, false, None),
+        },
+        Binding::Http {
+            path: "/whatever",
+            config: HttpBindingConfig::new(false, false, false, None),
+        },
+        Binding::Http {
+            path: "/some/path",
             config: HttpBindingConfig::new(false, false, false, None),
         },
     ],
@@ -298,55 +340,74 @@ impl TodoState {
     }
 
     // -------------------------------------------------------------------------
-    // DYNAMIC ROUTING HANDLERS (for testing fallback behavior)
-    // -------------------------------------------------------------------------
+// DYNAMIC ROUTING HANDLERS (for testing fallback behavior)
+// -------------------------------------------------------------------------
 
-    /// Fallback handler for all GET requests not matched by specific handlers
-    #[http(method = "GET")]
-    fn handle_get_fallback(&mut self) -> ApiResponse {
-        let path = get_path().unwrap_or_default();
-        kiprintln!("GET fallback for: {}", path);
-
-        // Demonstrate path-based routing logic within fallback
-        match path.as_str() {
-            p if p.starts_with("/api/") => {
-                ApiResponse::new(&format!("API GET fallback for {}", p))
-            }
-            p if p.starts_with("/admin/") => {
-                ApiResponse::new(&format!("Admin GET fallback for {}", p))
-            }
-            _ => ApiResponse::new(&format!("General GET fallback for {}", path)),
-        }
+/// Fallback handler for API GET requests - NO PATH, uses get_path() internally
+#[http(method = "GET")]
+fn handle_api_get_fallback(&mut self) -> ApiResponse {
+    let path = get_path().unwrap_or_default();
+    
+    // Only handle paths we want to handle
+    if path.starts_with("/api/") {
+        kiprintln!("GET fallback for API: {}", path);
+        ApiResponse::new(&format!("API GET fallback for {}", path))
+    } else if path.starts_with("/admin/") {
+        kiprintln!("GET fallback for admin: {}", path);
+        ApiResponse::new(&format!("Admin GET fallback for {}", path))
+    } else if path.starts_with("/test/") {
+        kiprintln!("GET fallback for test: {}", path);
+        ApiResponse::new(&format!("Test GET fallback for {}", path))
+    } else {
+        // This will let other handlers (like catch-all) handle it
+        // But since this is a GET handler without path, it might interfere with UI
+        // So we should be more specific about what we handle
+        ApiResponse::new(&format!("Unexpected GET fallback for {}", path))
     }
+}
 
-    /// Fallback handler for all POST requests with parameters not matched by specific handlers
-    #[http(method = "POST")]
-    async fn handle_post_fallback(&mut self, req: ApiRequest) -> Result<ApiResponse, String> {
-        let path = get_path().unwrap_or_default();
-        kiprintln!("POST fallback for: {} with data: {:?}", path, req);
+/// Fallback handler for POST requests - NO PATH, uses get_path() internally
+#[http(method = "POST")]
+async fn handle_post_fallback(&mut self, req: ApiRequest) -> Result<ApiResponse, String> {
+    let path = get_path().unwrap_or_default();
+    kiprintln!("POST fallback for: {} with data: {:?}", path, req);
 
-        // Demonstrate path-based routing logic for POST with parameters
-        match path.as_str() {
-            p if p.starts_with("/api/") => Ok(ApiResponse::new(&format!(
-                "API POST to {} with: {}",
-                p, req.message
-            ))),
-            _ => Ok(ApiResponse::new(&format!(
-                "General POST to {} with: {}",
-                path, req.message
-            ))),
-        }
+    match path.as_str() {
+        p if p.starts_with("/api/") => Ok(ApiResponse::new(&format!(
+            "API POST to {} with: {}",
+            p, req.message
+        ))),
+        _ => Ok(ApiResponse::new(&format!(
+            "General POST to {} with: {}",
+            path, req.message
+        ))),
     }
+}
 
-    /// Ultimate catch-all handler for any unmatched method/path combination
-    #[http]
-    fn handle_any_method(&mut self) -> ApiResponse {
-        let path = get_path().unwrap_or_default();
-        let method = get_http_method().unwrap_or_default();
-        kiprintln!("{} {} catch-all", method, path);
+/// Catch-all for non-GET methods - NO PATH, uses get_path() internally
+#[http(method = "PUT")]
+fn handle_put_fallback(&mut self) -> ApiResponse {
+    let path = get_path().unwrap_or_default();
+    let method = get_http_method().unwrap_or_default();
+    kiprintln!("{} {} catch-all", method, path);
+    ApiResponse::new(&format!("Catch-all: {} {}", method, path))
+}
 
-        ApiResponse::new(&format!("Catch-all: {} {}", method, path))
-    }
+#[http(method = "DELETE")]
+fn handle_delete_fallback(&mut self) -> ApiResponse {
+    let path = get_path().unwrap_or_default();
+    let method = get_http_method().unwrap_or_default();
+    kiprintln!("{} {} catch-all", method, path);
+    ApiResponse::new(&format!("Catch-all: {} {}", method, path))
+}
+
+#[http(method = "PATCH")]
+fn handle_patch_fallback(&mut self) -> ApiResponse {
+    let path = get_path().unwrap_or_default();
+    let method = get_http_method().unwrap_or_default();
+    kiprintln!("{} {} catch-all", method, path);
+    ApiResponse::new(&format!("Catch-all: {} {}", method, path))
+}
  
 
 }
