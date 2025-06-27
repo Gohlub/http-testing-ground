@@ -148,6 +148,10 @@ pub struct TodoState {
             path: "/some/path",
             config: HttpBindingConfig::new(false, false, false, None),
         },
+        Binding::Http {
+            path: "/api/data",
+            config: HttpBindingConfig::new(false, false, false, None),
+        },
     ],
     save_config = SaveOptions::EveryMessage,
     wit_world = "todo-template-dot-os-v0"
