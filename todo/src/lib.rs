@@ -4,7 +4,9 @@ use hyperware_process_lib::http::server::{send_ws_push, WsMessageType};
 use hyperware_process_lib::{kiprintln, LazyLoadBlob};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use uuid::Uuid; 
+use uuid::Uuid;
+use std::time::Duration;
+use std::thread::sleep;
 
 // =============================================================================
 // CORE TODO APPLICATION DATA STRUCTURES
@@ -121,7 +123,7 @@ pub struct TodoState {
             config: HttpBindingConfig::new(false, false, false, None),
         },
         Binding::Http {
-            path: "/admin/dashboard", 
+            path: "/admin/dashboard",
             config: HttpBindingConfig::new(false, false, false, None),
         },
         Binding::Http {
@@ -148,8 +150,12 @@ pub struct TodoState {
             path: "/some/path",
             config: HttpBindingConfig::new(false, false, false, None),
         },
+        Binding::Http {
+            path: "/users-slow",
+            config: HttpBindingConfig::new(false, false, false, None),
+        },
     ],
-    save_config = SaveOptions::EveryMessage,
+    save_config = hyperware_app_common::SaveOptions::EveryMessage,
     wit_world = "todo-template-dot-os-v0"
 )]
 
@@ -176,13 +182,13 @@ impl TodoState {
         if text.trim().is_empty() {
             return Err("Task text cannot be empty".to_string());
         }
-        
+
         let new_task = TodoItem {
             id: Uuid::new_v4().to_string(),
             text,
             completed: false,
         };
-        
+
         self.tasks.push(new_task.clone());
         kiprintln!("Added task: {:?}", new_task);
 
@@ -201,7 +207,7 @@ impl TodoState {
     #[http]
     async fn toggle_task(&mut self, task_id: String) -> Result<TodoItem, String> {
         kiprintln!("Toggling task: {}", task_id);
-        
+
         if let Some(task) = self.tasks.iter_mut().find(|t| t.id == task_id) {
             task.completed = !task.completed;
             kiprintln!("Task toggled: {:?}", task);
@@ -322,7 +328,7 @@ impl TodoState {
     // =============================================================================
     // TESTING & DEMO HANDLERS (for HTTP routing validation)
     // =============================================================================
-    
+
 
 
     /// Demo handler: GET /users
@@ -337,6 +343,15 @@ impl TodoState {
     async fn create_user(&mut self, req: ApiRequest) -> Result<ApiResponse, String> {
         kiprintln!("POST /users: {:?}", req);
         Ok(ApiResponse::new(&format!("Created user: {}", req.message)))
+    }
+
+    /// Demo handler: POST /users-slow (with 5 second delay)
+    #[http(method = "POST", path = "/users-slow")]
+    async fn create_user_slow(&mut self, req: ApiRequest) -> Result<ApiResponse, String> {
+        kiprintln!("POST /users-slow: {:?} - Starting 5 second delay", req);
+        sleep(Duration::from_secs(5));
+        kiprintln!("POST /users-slow: Delay complete, returning response");
+        Ok(ApiResponse::new(&format!("Created user slowly: {}", req.message)))
     }
 
     /// Demo handler: GET /posts
@@ -361,7 +376,7 @@ impl TodoState {
 #[http(method = "GET")]
 fn handle_api_get_fallback(&mut self) -> ApiResponse {
     let path = get_path().unwrap_or_default();
-    
+
     // Only handle paths we want to handle
     if path.starts_with("/api/") {
         kiprintln!("GET fallback for API: {}", path);
@@ -422,6 +437,6 @@ fn handle_patch_fallback(&mut self) -> ApiResponse {
     kiprintln!("{} {} catch-all", method, path);
     ApiResponse::new(&format!("Catch-all: {} {}", method, path))
 }
- 
+
 
 }

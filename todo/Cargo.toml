@@ -10,10 +10,14 @@ wit-bindgen = "0.36.0"
 path = "../target/caller-utils"
 
 [dependencies.hyperprocess_macro]
-path = "/Users/zahirsabotic/Documents/Work/hyperprocess-macro/hyperprocess_macro"
+git = "https://github.com/hyperware-ai/hyperprocess-macro"
+rev = "7a645c5"
+# rev = "0b9ec32"
 
 [dependencies.hyperware_app_common]
-path = "/Users/zahirsabotic/Documents/Work/hyperprocess-macro/hyperware_app_common"
+git = "https://github.com/hyperware-ai/hyperprocess-macro"
+rev = "7a645c5"
+# rev = "0b9ec32"
 
 [dependencies.serde]
 features = ["derive"]
