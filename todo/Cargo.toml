@@ -11,11 +11,11 @@ path = "../target/caller-utils"
 
 [dependencies.hyperprocess_macro]
 git = "https://github.com/hyperware-ai/hyperprocess-macro"
-rev = "6bf8872"
+rev = "9836e2a"
 
 [dependencies.hyperware_app_common]
 git = "https://github.com/hyperware-ai/hyperprocess-macro"
-rev = "6bf8872"
+rev = "9836e2a"
 
 [dependencies.serde]
 features = ["derive"]
