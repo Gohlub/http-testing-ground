@@ -14,6 +14,7 @@
       "homepage:homepage:sys",
       "http-client:distro:sys",
       "http-server:distro:sys",
+      "timer:distro:sys",
       "vfs:distro:sys"
     ],
     "public": false

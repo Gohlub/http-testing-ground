@@ -1,12 +1,10 @@
 use hyperprocess_macro::hyperprocess;
-use hyperware_app_common::{get_http_method, get_path};
+use hyperware_app_common::{get_http_method, get_path, sleep};
 use hyperware_process_lib::http::server::{send_ws_push, WsMessageType};
 use hyperware_process_lib::{kiprintln, LazyLoadBlob};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use uuid::Uuid;
-use std::time::Duration;
-use std::thread::sleep;
 
 // =============================================================================
 // CORE TODO APPLICATION DATA STRUCTURES
@@ -349,7 +347,10 @@ impl TodoState {
     #[http(method = "POST", path = "/users-slow")]
     async fn create_user_slow(&mut self, req: ApiRequest) -> Result<ApiResponse, String> {
         kiprintln!("POST /users-slow: {:?} - Starting 5 second delay", req);
-        sleep(Duration::from_secs(5));
+        let sleep_res = sleep(5_000).await;
+        if sleep_res.is_err() {
+            return Err(format!("failed to sleep: {}", sleep_res.unwrap_err()));
+        }
         kiprintln!("POST /users-slow: Delay complete, returning response");
         Ok(ApiResponse::new(&format!("Created user slowly: {}", req.message)))
     }
